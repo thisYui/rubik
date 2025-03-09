@@ -96,7 +96,7 @@ impl Cube {
             temp_state.copy_from_slice(s);
             temp_state
         }
-        None => Self::default_state(), // Nếu None, dùng trạng thái đã giải
+        None => Self::default_state(), // If no state is provided, use the default state
     };
 
     Ok(Self { state: cube_state })
@@ -104,10 +104,10 @@ impl Cube {
 
     // Hàm trả về trạng thái đã giải của Rubik
     fn default_state() -> [u8; Self::CELL_COUNT] {
-        // Giả sử trạng thái mặc định là một dãy số nào đó đại diện cho Rubik đã giải
+        // Rubik is an array of 54 elements
         let mut default_state = [0; Self::CELL_COUNT];
         for (i, val) in default_state.iter_mut().enumerate() {
-            *val = (i / Self::FACE_SIZE) as u8; // Mỗi mặt của Rubik có 9 ô, giả sử màu được đánh số từ 0-5
+            *val = (i / Self::FACE_SIZE) as u8; // Each face has 9 stickers with the same color
         }
         default_state
     }
@@ -135,7 +135,7 @@ impl Cube {
 
     // Rotate the face clockwise
     fn rotate_face_clockwise(&mut self, face: Face) {
-        /** Example:
+        /* Example:
         * Before rotate:      After rotate:
              |1 2 3|             |7 4 1|
              |4 5 6|     =>      |8 5 2|
@@ -144,8 +144,7 @@ impl Cube {
         In face be rotated, the row '1 2 3' will be rotated to column '1 2 3'.
         Number 5 in the center of the face will not change.
         Like the matrix rotation, we can rotate the face by 90° clockwise by swapping the elements.
-
-        **/
+        */
 
         let start = face as usize;// Transport enum Face to usize
         let mut new_face = [0; Self::FACE_SIZE];
@@ -163,7 +162,7 @@ impl Cube {
 
     // Function to rotate the adjacent faces
     fn rotate_adjacent(&mut self, face: Face) {
-        /** Example:
+        /* Example:
           Before rotate:          After rotate:
                 0 1 2                  2 1 0
              0 |_ _ _| 4            7 |_ _ _| 0
@@ -195,7 +194,7 @@ impl Cube {
         - 6 7 8: Row is bottom of face -> Last 3 elements of the face is bottom
         - 0 3 6: Column is left of face -> First element of each row is left
         - 2 5 8: Column is right of face -> Last element of each row is right
-        **/
+        */
 
         let indices = match face {
             // Define the indices of the stickers in the adjacent faces
@@ -252,7 +251,7 @@ impl Cube {
     // face: Face need to rotate
     // direction: diriction rotate (Clockwise, CounterClockwise, DoubleTurn)
     pub fn rotate(&mut self, face: Face, direction: RotationDirection) {
-        /** Example:
+        /* Example:
         * Before rotate:          After rotate:
                 0 1 2                  2 1 0
              0 |1 2 3| 4            7 |7 4 1| 0
@@ -266,7 +265,7 @@ impl Cube {
         - Clockwise: 1 time
         - CounterClockwise: 3 times (because 3 times of clockwise rotation is equal to 1 time of counter-clockwise rotation)
         - DoubleTurn: 2 times (180°)
-        **/
+        */
         let times = direction as usize;  // Transport enum RotationDirection to usize
         // Thực hiện quay theo số lần đã tính
         for _ in 0..times {

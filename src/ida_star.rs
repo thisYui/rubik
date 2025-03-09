@@ -1,31 +1,34 @@
+/**
+* Diameter of the Rubik's Cube Group is 20
+* The maximum number of moves to solve the Rubik's Cube is 20 if the move be chosen is the best move
+* In rubik space have more 43 trillion states
+*/
+
 use crate::cube::{Cube, Face, RotationDirection};
 use crate::heuristic::*;
 use std::collections::HashSet;
 
 // Using IDA* algorithms to find answer
-pub fn ida_star(start: &Cube) -> Option<Vec<(Face, RotationDirection)>> {
-    let mut bound = combined_heuristic(start);
+pub fn ida_star(cube: &Cube) -> Option<Vec<(Face, RotationDirection)>> {
+    let mut bound = combined_heuristic(cube);
     let mut path = Vec::new();
-    let depth_limit: usize = 5;
-    let mut sum = 0;
+    let mut best_state = *cube; // Lưu trạng thái tốt nhất tìm thấy
+
     loop {
-        println!("Current bound: {}", bound);
-        let t = search(start, 0, bound, &mut path, &mut HashSet::new(), depth_limit, &mut sum);
+        let result = search(cube, 0, bound, &mut path, &mut HashSet::new(), 5, &mut best_state);
 
-        if t == 0 {
-            println!("Solution found!");
-            return Some(path);
+        if result == 0 {
+            return Some(path); // Found solution
         }
-        if t == usize::MAX {
-            println!("No solution found.");
-            return None;
+        if result == usize::MAX {
+            return None; // No solution
         }
 
-        bound = t; // Update limit to find
+        bound = result; // Update bound
     }
 }
 
-/// Tìm kiếm sâu có giới hạn trong IDA*
+/// Find the solution using IDA* algorithms
 fn search(
     cube: &Cube,
     g: usize,
@@ -33,7 +36,7 @@ fn search(
     path: &mut Vec<(Face, RotationDirection)>,
     visited: &mut HashSet<Cube>,
     depth_limit: usize,
-    sum: &mut i32,
+    best_state: &mut Cube,
 ) -> usize {
     if g > depth_limit {
         return usize::MAX;
@@ -49,10 +52,6 @@ fn search(
         // This is solution
         return 0;
     }
-
-    *sum += 1;
-
-    println!("Current depth: {}, f: {}, bound: {}, sum: {}", g, f, bound, sum);
 
     let mut min_cost = usize::MAX;
 
@@ -70,31 +69,35 @@ fn search(
     moves.sort_by_key(|&(_, _, new_h)| new_h);
 
     for ((face, dir), new_cube, _) in moves {
-        // Remove the move that is the opposite of the previous move
-        if !path.is_empty()
-            && path.last().unwrap().0 == face { // Don't rotate the same face before
+        // Don't rotate the same face twice
+        if !path.is_empty() && path.last().unwrap().0 == face {
             continue;
         }
 
+        // Avoid repeating states
         if visited.contains(&new_cube) {
-            continue; // Avoid repeating approved status
+            continue;
         }
 
         path.push((face, dir));
-        /// If the new state is visited successfully or not successfully
-        /// Both are added to the visited set because if is successful, it will be the solution
-        /// If not successful, it will be the state that has been visited and don't need to visit again
+        // If the new state is visited successfully or not successfully
+        // Both are added to the visited set because if is successful, it will be the solution
+        // If not successful, it will be the state that has been visited and don't need to visit again
         visited.insert(new_cube);
 
-        let t = search(&new_cube, g + 1, bound, path, visited, depth_limit, sum);
+        let t = search(&new_cube, g + 1, bound, path, visited, depth_limit, best_state);
+
+        if t < min_cost {
+            min_cost = t;
+            *best_state = *cube;
+        }
 
         if t == 0 {
-            return 0; // Tìm thấy lời giải
+            return 0; // Find solution
         }
 
         path.pop();
-        visited.remove(&new_cube);
-        min_cost = min_cost.min(t);
+        //visited.remove(&new_cube);
     }
 
     min_cost

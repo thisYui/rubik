@@ -6,12 +6,12 @@ use crate::cube::*;
 use crate::ida_star::*;
 
 fn main() {
-    // 0 - trắng
-    // 1 - đỏ
-    // 2 - xanh lá cây
-    // 3 - xanh dương
-    // 4 - cam
-    // 5 - vàng
+    // 0 - White
+    // 1 - Red
+    // 2 - Green
+    // 3 - Blue
+    // 4 - Orange
+    // 5 - Yellow
 
     let rubik : [u8; 54] = [
         3, 2, 3, 4, 0, 2, 2, 4, 0,
@@ -23,19 +23,19 @@ fn main() {
     ];
 
 
-    // Khởi tạo một trạng thái Cube ngẫu nhiên
+    // Create a new cube with the initial state
     let mut cube = Cube::new(Some(& rubik)).expect("Error initializing cube");
     println!("Initial scrambled cube:");
-    cube.print(); // Giả sử có phương thức hiển thị trạng thái cube
+    cube.print(); // Show the initial state of the cube
 
-    // Giải khối Rubik bằng IDA*
+    // Find the solution using IDA*
     if let Some(solution) = ida_star(&cube) {
         println!("Solution found with {} moves:\n", solution.len());
 
         for (i, (face, direction)) in solution.iter().enumerate() {
             println!("Step {}: Rotate {:?} {:?}", i + 1, face, direction);
             cube.rotate(*face, *direction);
-            cube.print(); // Hiển thị trạng thái Cube sau mỗi bước xoay
+            cube.print(); // Show the state of the cube after each move
         }
 
         println!("Final solved cube:");

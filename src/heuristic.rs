@@ -20,7 +20,7 @@ impl PatternDB {
         let mut pdb = HashMap::new();
         let mut queue = VecDeque::new();
 
-        let solved_cube = Cube::new(None).expect("Error"); // Trạng thái ban đầu đã giải
+        let solved_cube = Cube::new(None).expect("Error"); // Default solved cube
         pdb.insert(solved_cube, 0);
         queue.push_back((solved_cube, 0));
 
@@ -30,7 +30,7 @@ impl PatternDB {
             } // Giới hạn độ sâu
 
             for &(face, direction) in Cube::MOVES.iter() {
-                let mut new_cube = cube; // Tránh clone, thay vào đó dùng giá trị cũ
+                let new_cube = cube; // Avoid clone
                 new_cube.apply_move(face, direction);
 
                 if !pdb.contains_key(&new_cube) {
@@ -70,8 +70,8 @@ fn manhattan_distance(cube: &Cube) -> usize {
     let mut total_distance = 0;
 
     for (i, &color) in cube.state.iter().enumerate() {
-        let (x, y, z) = index_to_xyz(i); // Chuyển chỉ số thành tọa độ 3D
-        let (cx, cy, cz) = correct_position(color, i); // Lấy tọa độ đúng của màu
+        let (x, y, z) = index_to_xyz(i); // Translate index to (x, y, z)
+        let (cx, cy, cz) = correct_position(color, i); // Get the correct position of the sticker
 
         total_distance += (x as isize - cx as isize).abs()
                       + (y as isize - cy as isize).abs()
@@ -83,8 +83,8 @@ fn manhattan_distance(cube: &Cube) -> usize {
 
 // Hàm giúp chuyển chỉ số `i` thành tọa độ (x, y, z)
 fn index_to_xyz(i: usize) -> (usize, usize, usize) {
-    let x = (i % Cube::FACE_SIZE) % 3;
-    let y = (i % Cube::FACE_SIZE) / 3;
+    let x = (i % Cube::FACE_SIZE) % Cube::EDGE_SIZE;
+    let y = (i % Cube::FACE_SIZE) / Cube::EDGE_SIZE;
     let z = i / Cube::FACE_SIZE;
     (x, y, z)
 }
@@ -93,8 +93,8 @@ fn index_to_xyz(i: usize) -> (usize, usize, usize) {
 fn correct_position(color: u8, index: usize) -> (usize, usize, usize) {
     let face = color as usize;
     let offset = index % Cube::FACE_SIZE;
-    let x = offset % 3;
-    let y = offset / 3;
+    let x = offset % Cube::EDGE_SIZE;
+    let y = offset / Cube::EDGE_SIZE;
     let z = face;
     (x, y, z)
 }
@@ -115,7 +115,7 @@ fn misplaced_edges(cube: &Cube) -> usize {
 
 fn edge_orientation_heuristic(cube: &Cube) -> usize {
     Cube::EDGES.iter()
-        .filter(|&&(a, b)| (cube.state[a] / 9) != (cube.state[b] / 9)) // Kiểm tra orientation
+        .filter(|&&(a, b)| (cube.state[a] / Cube::FACE_SIZE as u8) != (cube.state[b] / Cube::FACE_SIZE as u8)) // Kiểm tra orientation
         .count()
 }
 
@@ -123,7 +123,7 @@ fn corner_orientation_heuristic(cube: &Cube) -> usize {
     Cube::CORNERS.iter()
         .filter(|&&(a, b, c)| {
             let colors = [cube.state[a], cube.state[b], cube.state[c]];
-            let correct_colors = [(a / 9) as u8, (b / 9) as u8, (c / 9) as u8];
+            let correct_colors = [(a / Cube::FACE_SIZE) as u8, (b / Cube::FACE_SIZE) as u8, (c / Cube::FACE_SIZE) as u8];
             colors != correct_colors
         })
         .count()
@@ -132,9 +132,10 @@ fn corner_orientation_heuristic(cube: &Cube) -> usize {
 fn edge_permutation_heuristic(cube: &Cube) -> usize {
     Cube::EDGES.iter()
         .filter(|&&(a, b)| {
-            let correct_a = (a / 9) as u8;
-            let correct_b = (b / 9) as u8;
-            (cube.state[a] / 9) != correct_a || (cube.state[b] / 9) != correct_b
+            let correct_a = (a / Cube::FACE_SIZE) as u8;
+            let correct_b = (b / Cube::FACE_SIZE) as u8;
+            (cube.state[a] / Cube::FACE_SIZE as u8) != correct_a 
+                || (cube.state[b] / Cube::FACE_SIZE as u8) != correct_b
         })
         .count()
 }
@@ -142,10 +143,12 @@ fn edge_permutation_heuristic(cube: &Cube) -> usize {
 fn corner_permutation_heuristic(cube: &Cube) -> usize {
     Cube::CORNERS.iter()
         .filter(|&&(a, b, c)| {
-            let correct_a = (a / 9) as u8;
-            let correct_b = (b / 9) as u8;
-            let correct_c = (c / 9) as u8;
-            (cube.state[a] / 9) != correct_a || (cube.state[b] / 9) != correct_b || (cube.state[c] / 9) != correct_c
+            let correct_a = (a / Cube::FACE_SIZE) as u8;
+            let correct_b = (b / Cube::FACE_SIZE) as u8;
+            let correct_c = (c / Cube::FACE_SIZE) as u8;
+            (cube.state[a] / Cube::FACE_SIZE as u8) != correct_a 
+                || (cube.state[b] / Cube::FACE_SIZE as u8) != correct_b 
+                || (cube.state[c] / Cube::FACE_SIZE as u8) != correct_c
         })
         .count()
 }
@@ -159,7 +162,7 @@ fn parity_heuristic(cube: &Cube) -> usize {
             }
         }
     }
-    inversions % 2 // Nếu lẻ thì trả về 1, chẵn trả về 0
+    inversions % 2 // If the number of inversions is even, the parity is 0; otherwise, it's 1
 }
 
 pub fn combined_heuristic(cube: &Cube) -> usize {
@@ -177,5 +180,5 @@ pub fn combined_heuristic(cube: &Cube) -> usize {
     ]
     .into_iter()
     .max()
-    .unwrap_or(0) // Tránh lỗi nếu không có giá trị nào (trường hợp đặc biệt)
+    .unwrap_or(0) // Avoid panic
 }
